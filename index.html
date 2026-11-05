@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpacePrompt - Simple Sentence Reader</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts Dynamically Loaded -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link id="dynamic-font-link" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&family=Nanum+Gothic:wght@400;700&family=Gowun+Batang:wght@400;700&family=Sunflower:wght@500;700&family=Montserrat:wght@400;600&family=Roboto:wght@400;700&family=Gamja+Flower&display=swap">
+  
+  <style>
+    /* Smooth transition for theme & sentence changes */
+    .transition-theme {
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    .sentence-fade {
+      animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Hide scrollbar for clean presentation */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased font-sans transition-theme min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+
+  <!-- ==================== PAGE 1: INPUT SCREEN ==================== -->
+  <div id="page-input" class="min-h-screen flex flex-col justify-between max-w-4xl mx-auto px-4 py-8 w-full">
+    
+    <!-- Header -->
+    <header class="text-center my-6">
+      <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-gray-900 mb-2">
+        space<span class="text-indigo-600">prompt!</span>
+      </h1>
+      <p class="text-gray-500 text-sm sm:text-base">
+        텍스트 또는 TXT 파일을 입력하고 한 문장씩 몰입해서 읽어보세요.
+      </p>
+    </header>
+
+    <!-- Main Form Container -->
+    <main class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8 flex-1 flex flex-col justify-between mb-6">
+      
+      <!-- Textarea Input Area -->
+      <div class="flex-1 flex flex-col mb-6">
+        <div class="flex items-center justify-between mb-2">
+          <label for="text-input" class="text-sm font-semibold text-gray-700">
+            문장 입력
+          </label>
+          <button id="sample-btn" type="button" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors">
+            + 샘플 문장 넣기
+          </button>
+        </div>
+        <textarea id="text-input" 
+          class="w-full flex-1 min-h-[220px] p-4 text-gray-800 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none text-base sm:text-lg leading-relaxed placeholder-gray-300 transition-all"
+          placeholder="여기에 텍스트를 직접 입력하거나 아래에서 TXT 파일을 업로드하세요.&#10;마침표, 물음표, 느낌표, 줄바꿈 단위로 문장이 나뉩니다."></textarea>
+      </div>
+
+      <!-- File Upload & Actions -->
+      <div class="space-y-4">
+        <!-- TXT Upload Area -->
+        <div class="relative border-2 border-dashed border-gray-200 hover:border-indigo-400 rounded-xl p-4 text-center transition-colors group cursor-pointer bg-gray-50/50 hover:bg-indigo-50/30">
+          <input type="file" id="file-input" accept=".txt" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+          <div class="flex items-center justify-center space-x-2 text-gray-500 group-hover:text-indigo-600 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <span class="text-sm font-medium" id="file-name-display">TXT 파일 선택 또는 여기에 드래그</span>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button id="start-btn" type="button" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold text-lg rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all flex items-center justify-center space-x-2">
+          <span>spaceprompt!</span>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </button>
+      </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center text-xs text-gray-400">
+      SpacePrompt &copy; Simple Minimalist Reader
+    </footer>
+  </div>
+
+
+  <!-- ==================== PAGE 2: READER SCREEN ==================== -->
+  <div id="page-reader" class="hidden fixed inset-0 flex-col transition-theme">
+    
+    <!-- Top Control Bar -->
+    <header id="control-bar" class="w-full bg-white/90 backdrop-blur-md border-b border-gray-200/50 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 z-20 shadow-sm transition-theme">
+      
+      <!-- Left Group: Font & Style Controls -->
+      <div class="flex items-center flex-wrap gap-2 sm:gap-4">
+        
+        <!-- Back Button -->
+        <button id="back-btn" title="텍스트 수정하기" class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all flex items-center space-x-1 text-xs font-semibold">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+          </svg>
+          <span class="hidden sm:inline">수정</span>
+        </button>
+
+        <div class="h-4 w-px bg-gray-300"></div>
+
+        <!-- Text Color -->
+        <div class="flex items-center space-x-1" title="글자 색상">
+          <label for="text-color" class="text-xs font-medium text-gray-500 hidden sm:inline">글자</label>
+          <input type="color" id="text-color" value="#111827" class="w-7 h-7 rounded border border-gray-300 cursor-pointer bg-transparent p-0">
+        </div>
+
+        <!-- Background Color -->
+        <div class="flex items-center space-x-1" title="배경 색상">
+          <label for="bg-color" class="text-xs font-medium text-gray-500 hidden sm:inline">배경</label>
+          <input type="color" id="bg-color" value="#ffffff" class="w-7 h-7 rounded border border-gray-300 cursor-pointer bg-transparent p-0">
+        </div>
+
+        <!-- Dark Mode Toggle Button -->
+        <button id="dark-mode-toggle" type="button" title="다크 모드 전환" class="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-300">
+          <!-- Sun Icon (Light Mode) -->
+          <svg id="theme-icon-sun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <!-- Moon Icon (Dark Mode) -->
+          <svg id="theme-icon-moon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        </button>
+
+        <div class="h-4 w-px bg-gray-300 dark:bg-gray-700"></div>
+
+        <!-- Vertical Alignment Options -->
+        <div class="flex items-center bg-gray-100 dark:bg-gray-800 p-0.5 rounded-lg text-xs" title="글자 수직 정렬">
+          <button type="button" data-align="top" class="align-btn px-2.5 py-1 rounded-md font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 transition-all">상단</button>
+          <button type="button" data-align="middle" class="align-btn active-align px-2.5 py-1 rounded-md font-medium bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm transition-all">중앙</button>
+          <button type="button" data-align="bottom" class="align-btn px-2.5 py-1 rounded-md font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 transition-all">하단</button>
+        </div>
+
+        <!-- Font Size Slider -->
+        <div class="flex items-center space-x-2 bg-gray-100/80 px-2.5 py-1 rounded-lg">
+          <span class="text-xs font-medium text-gray-500">크기</span>
+          <input type="range" id="font-size-slider" min="20" max="96" value="48" step="2" class="w-16 sm:w-24 accent-indigo-600 cursor-pointer">
+          <span id="font-size-val" class="text-xs font-mono font-semibold text-gray-700 min-w-[32px]">48px</span>
+        </div>
+
+        <!-- Font Selector -->
+        <div class="flex items-center">
+          <select id="font-family-select" class="text-xs font-medium bg-gray-100/80 border border-transparent hover:border-gray-300 text-gray-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+            <option value="'Noto Sans KR', sans-serif">Noto Sans KR</option>
+            <option value="'Nanum Gothic', sans-serif">나눔고딕</option>
+            <option value="'Gowun Batang', serif">고운바탕</option>
+            <option value="'Sunflower', sans-serif">해바라기</option>
+            <option value="'Gamja Flower', cursive">감자꽃</option>
+            <option value="'Inter', sans-serif">Inter</option>
+            <option value="'Montserrat', sans-serif">Montserrat</option>
+            <option value="'Roboto', sans-serif">Roboto</option>
+          </select>
+        </div>
+
+        <div class="h-4 w-px bg-gray-300"></div>
+
+        <!-- Vertical Alignment Options -->
+        <div class="flex items-center bg-gray-100/80 p-0.5 rounded-lg text-xs font-medium text-gray-600">
+          <button id="align-top-btn" title="상단 정렬" class="px-2 py-1 rounded-md hover:text-indigo-600 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h16M12 8v12m-4-4l4 4 4-4" />
+            </svg>
+          </button>
+          <button id="align-middle-btn" title="중앙 정렬" class="px-2 py-1 rounded-md bg-white shadow-sm text-indigo-600 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12h16M12 5v14" />
+            </svg>
+          </button>
+          <button id="align-bottom-btn" title="하단 정렬" class="px-2 py-1 rounded-md hover:text-indigo-600 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 20h16M12 4v12m-4-4l4 4 4-4" />
+            </svg>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Right Group: Navigation & Counter -->
+      <div class="flex items-center space-x-2 ml-auto">
+        
+        <!-- Sentence Counter -->
+        <div id="counter-display" class="text-xs font-mono font-bold px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-md border border-indigo-100">
+          0 / 0
+        </div>
+
+        <!-- Previous Button -->
+        <button id="prev-btn" title="이전 문장 (Left Arrow / 4)" class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        <!-- Next Button -->
+        <button id="next-btn" title="다음 문장 (Right Arrow / Space / 6)" class="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all shadow-sm active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+
+      </div>
+
+    </header>
+
+    <!-- Main Centered Display Area -->
+    <main id="reader-stage" class="flex-1 flex items-center justify-center p-6 sm:p-12 overflow-y-auto no-scrollbar relative cursor-pointer selection:bg-indigo-300">
+      <div id="sentence-container" class="max-w-5xl w-full text-center my-auto transition-all">
+        <p id="sentence-text" class="leading-relaxed font-normal sentence-fade transition-all tracking-normal break-keep select-text">
+          <!-- Current sentence rendered here -->
+        </p>
+      </div>
+      
+      <!-- Key Hint Overlay (Disappears briefly or stays subtle at bottom) -->
+      <div class="absolute bottom-4 left-1/2 -translate-x-1/2 opacity-40 hover:opacity-100 transition-opacity pointer-events-none text-[11px] font-mono text-current flex items-center space-x-3 bg-black/10 backdrop-blur-sm px-3 py-1 rounded-full">
+        <span>이전: <kbd class="px-1 bg-black/10 rounded">←</kbd> 또는 <kbd class="px-1 bg-black/10 rounded">4</kbd></span>
+        <span>|</span>
+        <span>다음: <kbd class="px-1 bg-black/10 rounded">Space</kbd> / <kbd class="px-1 bg-black/10 rounded">→</kbd> / <kbd class="px-1 bg-black/10 rounded">6</kbd></span>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Custom Alert Toast -->
+  <div id="toast" class="fixed bottom-6 right-6 bg-gray-900 text-white px-4 py-3 rounded-xl shadow-2xl text-sm font-medium transition-all transform translate-y-20 opacity-0 pointer-events-none z-50 flex items-center space-x-2">
+    <span id="toast-message">알림 메시지</span>
+  </div>
+
+
+  <!-- ==================== JAVASCRIPT ==================== -->
+  <script>
+    // App State Variables
+    let sentences = [];
+    let currentIndex = 0;
+    let isDarkMode = false;
+
+    // DOM Elements
+    const pageInput = document.getElementById('page-input');
+    const pageReader = document.getElementById('page-reader');
+    const textInput = document.getElementById('text-input');
+    const fileInput = document.getElementById('file-input');
+    const fileNameDisplay = document.getElementById('file-name-display');
+    const startBtn = document.getElementById('start-btn');
+    const sampleBtn = document.getElementById('sample-btn');
+    const backBtn = document.getElementById('back-btn');
+    
+    // Reader DOM Elements
+    const sentenceText = document.getElementById('sentence-text');
+    const sentenceContainer = document.getElementById('sentence-container');
+    const counterDisplay = document.getElementById('counter-display');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const readerStage = document.getElementById('reader-stage');
+    
+    // Control Bar Elements
+    const textColorInput = document.getElementById('text-color');
+    const bgColorInput = document.getElementById('bg-color');
+    const fontSizeSlider = document.getElementById('font-size-slider');
+    const fontSizeVal = document.getElementById('font-size-val');
+    const fontFamilySelect = document.getElementById('font-family-select');
+    const controlBar = document.getElementById('control-bar');
+    const alignBtns = document.querySelectorAll('.align-btn');
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+    const themeIconSun = document.getElementById('theme-icon-sun');
+    const themeIconMoon = document.getElementById('theme-icon-moon');
+
+    // Toggle Dark Mode Function
+    function toggleDarkMode() {
+      isDarkMode = !isDarkMode;
+
+      if (isDarkMode) {
+        document.documentElement.classList.add('dark');
+        themeIconSun.classList.remove('hidden');
+        themeIconMoon.classList.add('hidden');
+
+        // Apply dark presets to reader if defaults are active
+        bgColorInput.value = '#111827';
+        textColorInput.value = '#f9fafb';
+      } else {
+        document.documentElement.classList.remove('dark');
+        themeIconSun.classList.add('hidden');
+        themeIconMoon.classList.remove('hidden');
+
+        // Apply light presets
+        bgColorInput.value = '#ffffff';
+        textColorInput.value = '#111827';
+      }
+
+      // Update actual reader colors
+      pageReader.style.backgroundColor = bgColorInput.value;
+      sentenceText.style.color = textColorInput.value;
+      updateControlBarTheme(bgColorInput.value);
+    }
+
+    darkModeToggle.addEventListener('click', toggleDarkMode);
+
+    // Toast Notification
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.textContent = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    // Sentence Parser Logic
+    function parseSentences(rawText) {
+      if (!rawText || !rawText.trim()) return [];
+
+      // Normalize line breaks
+      const text = rawText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      
+      // Split by sentence delimiters (. ! ? " ” and newlines) while preserving structure
+      const regex = /([^.!?\n"”]+[.!?\n"”]+)|([^.!?\n"”]+)/g;
+      const matches = text.match(regex) || [];
+
+      const result = [];
+      matches.forEach(chunk => {
+        const trimmed = chunk.trim();
+        if (trimmed.length > 0) {
+          result.push(trimmed);
+        }
+      });
+
+      return result;
+    }
+
+    // Start SpacePrompt Presentation
+    function startPrompt() {
+      const text = textInput.value;
+      const parsed = parseSentences(text);
+
+      if (parsed.length === 0) {
+        showToast('읽을 문장을 먼저 입력하시거나 TXT 파일을 첨부해주세요!');
+        textInput.focus();
+        return;
+      }
+
+      sentences = parsed;
+      currentIndex = 0;
+
+      // Switch Screens
+      pageInput.classList.add('hidden');
+      pageReader.classList.remove('hidden');
+      pageReader.classList.add('flex');
+
+      // Update View
+      renderSentence();
+    }
+
+    // Go Back to Input Screen
+    function exitPrompt() {
+      pageReader.classList.add('hidden');
+      pageReader.classList.remove('flex');
+      pageInput.classList.remove('hidden');
+    }
+
+    // Render Current Sentence
+    function renderSentence() {
+      if (sentences.length === 0) return;
+
+      // Animation Reset
+      sentenceText.classList.remove('sentence-fade');
+      void sentenceText.offsetWidth; // Trigger reflow
+      sentenceText.classList.add('sentence-fade');
+
+      sentenceText.textContent = sentences[currentIndex];
+      counterDisplay.textContent = `${currentIndex + 1} / ${sentences.length}`;
+
+      // Navigation Buttons State
+      prevBtn.disabled = currentIndex === 0;
+      nextBtn.disabled = currentIndex === sentences.length - 1;
+    }
+
+    // Next Sentence
+    function goNext() {
+      if (currentIndex < sentences.length - 1) {
+        currentIndex++;
+        renderSentence();
+      } else {
+        showToast('마지막 문장입니다.');
+      }
+    }
+
+    // Previous Sentence
+    function goPrev() {
+      if (currentIndex > 0) {
+        currentIndex--;
+        renderSentence();
+      } else {
+        showToast('첫 번째 문장입니다.');
+      }
+    }
+
+    // File Input Handler
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (!file.name.endsWith('.txt')) {
+        showToast('TXT 파일만 지원합니다.');
+        return;
+      }
+
+      fileNameDisplay.textContent = `파일: ${file.name}`;
+      
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        textInput.value = evt.target.result;
+        showToast('TXT 파일을 불러왔습니다!');
+      };
+      reader.readAsText(file, 'UTF-8');
+    });
+
+    // Sample Text Loading
+    sampleBtn.addEventListener('click', () => {
+      textInput.value = `Welcome to spaceprompt!
+이것은 한 문장씩 읽기 위한 심플하고 몰입감 있는 텍스트 리더입니다.
+스페이스바, 오른쪽 화살표 또는 숫자키 6을 누르면 다음 문장으로 이동합니다.
+왼쪽 화살표나 숫자키 4를 누르면 이전 문장으로 돌아갑니다.
+상단 바에서 글자 색상, 배경 색상, 폰트 크기, 구글 웹폰트를 자유롭게 변경해보세요.
+지금 바로 시작해보세요!`;
+      fileNameDisplay.textContent = '샘플 문장로드 완료';
+      showToast('샘플 텍스트가 입력되었습니다.');
+    });
+
+    // Custom Styling Event Listeners
+    textColorInput.addEventListener('input', (e) => {
+      sentenceText.style.color = e.target.value;
+    });
+
+    bgColorInput.addEventListener('input', (e) => {
+      const color = e.target.value;
+      pageReader.style.backgroundColor = color;
+      updateControlBarTheme(color);
+    });
+
+    function updateControlBarTheme(color) {
+      const hex = color.replace('#', '');
+      const r = parseInt(hex.substr(0, 2), 16) || 0;
+      const g = parseInt(hex.substr(2, 2), 16) || 0;
+      const b = parseInt(hex.substr(4, 2), 16) || 0;
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+
+      if (brightness < 128) {
+        controlBar.classList.add('bg-gray-900/90', 'border-gray-800', 'text-white');
+        controlBar.classList.remove('bg-white/90', 'border-gray-200/50', 'text-gray-800');
+      } else {
+        controlBar.classList.remove('bg-gray-900/90', 'border-gray-800', 'text-white');
+        controlBar.classList.add('bg-white/90', 'border-gray-200/50', 'text-gray-800');
+      }
+    }
+
+    fontSizeSlider.addEventListener('input', (e) => {
+      const val = e.target.value;
+      sentenceText.style.fontSize = `${val}px`;
+      fontSizeVal.textContent = `${val}px`;
+    });
+
+    fontFamilySelect.addEventListener('change', (e) => {
+      sentenceText.style.fontFamily = e.target.value;
+    });
+
+    // Vertical Alignment Control
+    function setVerticalAlign(position) {
+      alignBtns.forEach(btn => {
+        if (btn.dataset.align === position) {
+          btn.classList.add('bg-white', 'dark:bg-gray-700', 'text-indigo-600', 'dark:text-indigo-400', 'shadow-sm');
+          btn.classList.remove('text-gray-600', 'dark:text-gray-300');
+        } else {
+          btn.classList.remove('bg-white', 'dark:bg-gray-700', 'text-indigo-600', 'dark:text-indigo-400', 'shadow-sm');
+          btn.classList.add('text-gray-600', 'dark:text-gray-300');
+        }
+      });
+
+      sentenceContainer.classList.remove('my-auto', 'mt-12', 'mb-16');
+
+      if (position === 'top') {
+        readerStage.classList.remove('items-center', 'items-end');
+        readerStage.classList.add('items-start');
+        sentenceContainer.classList.add('mt-12');
+      } else if (position === 'bottom') {
+        readerStage.classList.remove('items-center', 'items-start');
+        readerStage.classList.add('items-end');
+        sentenceContainer.classList.add('mb-16');
+      } else { // middle
+        readerStage.classList.remove('items-start', 'items-end');
+        readerStage.classList.add('items-center');
+        sentenceContainer.classList.add('my-auto');
+      }
+    }
+
+    alignBtns.forEach(btn => {
+      btn.addEventListener('click', () => setVerticalAlign(btn.dataset.align));
+    });
+
+    // Button Click Binding
+    startBtn.addEventListener('click', startPrompt);
+    backBtn.addEventListener('click', exitPrompt);
+    prevBtn.addEventListener('click', goPrev);
+    nextBtn.addEventListener('click', goNext);
+
+    // Clicking center stage advances to next sentence
+    readerStage.addEventListener('click', (e) => {
+      // Prevent click if user is selecting text
+      const selection = window.getSelection();
+      if (selection && selection.toString().length > 0) return;
+      
+      // Don't trigger if clicked on controls or text directly
+      if (e.target.closest('#control-bar')) return;
+      goNext();
+    });
+
+    // Keyboard Shortcuts Navigation
+    window.addEventListener('keydown', (e) => {
+      // Only execute shortcuts when Reader Screen is visible
+      if (pageReader.classList.contains('hidden')) return;
+
+      // Ignore when focusing inputs if any
+      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+      const key = e.key;
+
+      if (key === ' ' || key === 'ArrowRight' || key === '6') {
+        e.preventDefault();
+        goNext();
+      } else if (key === 'ArrowLeft' || key === '4') {
+        e.preventDefault();
+        goPrev();
+      } else if (key === 'Escape') {
+        exitPrompt();
+      }
+    });
+
+    // Initial Styles Application
+    sentenceText.style.fontSize = `${fontSizeSlider.value}px`;
+    sentenceText.style.fontFamily = fontFamilySelect.value;
+    sentenceText.style.color = textColorInput.value;
+    pageReader.style.backgroundColor = bgColorInput.value;
+  </script>
+</body>
+</html>
