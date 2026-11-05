@@ -100,8 +100,15 @@
   <!-- ==================== PAGE 2: READER SCREEN ==================== -->
   <div id="page-reader" class="hidden fixed inset-0 flex-col transition-theme">
     
+    <!-- Toggle Bar Open Button (Visible when control bar is hidden) -->
+    <button id="show-bar-btn" title="도구 바 열기 (H 또는 Tab)" class="hidden fixed top-4 right-4 z-30 p-2.5 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-full shadow-lg border border-gray-200 dark:border-gray-700 hover:scale-105 active:scale-95 text-gray-700 dark:text-gray-200 transition-all">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
+
     <!-- Top Control Bar -->
-    <header id="control-bar" class="w-full bg-white/90 backdrop-blur-md border-b border-gray-200/50 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 z-20 shadow-sm transition-theme">
+    <header id="control-bar" class="w-full bg-white/90 backdrop-blur-md border-b border-gray-200/50 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 z-20 shadow-sm transition-all duration-300">
       
       <!-- Left Group: Font & Style Controls -->
       <div class="flex items-center flex-wrap gap-2 sm:gap-4">
@@ -215,6 +222,15 @@
           </svg>
         </button>
 
+        <div class="h-4 w-px bg-gray-300 dark:bg-gray-700"></div>
+
+        <!-- Collapse Bar Button -->
+        <button id="hide-bar-btn" title="도구 바 접기 (H 또는 Tab)" class="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-white rounded-lg transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+          </svg>
+        </button>
+
       </div>
 
     </header>
@@ -229,9 +245,11 @@
       
       <!-- Key Hint Overlay (Disappears briefly or stays subtle at bottom) -->
       <div class="absolute bottom-4 left-1/2 -translate-x-1/2 opacity-40 hover:opacity-100 transition-opacity pointer-events-none text-[11px] font-mono text-current flex items-center space-x-3 bg-black/10 backdrop-blur-sm px-3 py-1 rounded-full">
-        <span>이전: <kbd class="px-1 bg-black/10 rounded">←</kbd> 또는 <kbd class="px-1 bg-black/10 rounded">4</kbd></span>
+        <span>이전: <kbd class="px-1 bg-black/10 rounded">←</kbd> / <kbd class="px-1 bg-black/10 rounded">4</kbd></span>
         <span>|</span>
         <span>다음: <kbd class="px-1 bg-black/10 rounded">Space</kbd> / <kbd class="px-1 bg-black/10 rounded">→</kbd> / <kbd class="px-1 bg-black/10 rounded">6</kbd></span>
+        <span>|</span>
+        <span>바 토글: <kbd class="px-1 bg-black/10 rounded">H</kbd> / <kbd class="px-1 bg-black/10 rounded">Tab</kbd></span>
       </div>
     </main>
 
@@ -249,6 +267,7 @@
     let sentences = [];
     let currentIndex = 0;
     let isDarkMode = false;
+    let isBarVisible = true;
 
     // DOM Elements
     const pageInput = document.getElementById('page-input');
@@ -259,6 +278,8 @@
     const startBtn = document.getElementById('start-btn');
     const sampleBtn = document.getElementById('sample-btn');
     const backBtn = document.getElementById('back-btn');
+    const hideBarBtn = document.getElementById('hide-bar-btn');
+    const showBarBtn = document.getElementById('show-bar-btn');
     
     // Reader DOM Elements
     const sentenceText = document.getElementById('sentence-text');
@@ -309,6 +330,22 @@
     }
 
     darkModeToggle.addEventListener('click', toggleDarkMode);
+
+    // Toggle Control Bar Visibility
+    function toggleControlBar(show) {
+      isBarVisible = typeof show === 'boolean' ? show : !isBarVisible;
+
+      if (isBarVisible) {
+        controlBar.classList.remove('-translate-y-full', 'opacity-0', 'pointer-events-none');
+        showBarBtn.classList.add('hidden');
+      } else {
+        controlBar.classList.add('-translate-y-full', 'opacity-0', 'pointer-events-none');
+        showBarBtn.classList.remove('hidden');
+      }
+    }
+
+    hideBarBtn.addEventListener('click', () => toggleControlBar(false));
+    showBarBtn.addEventListener('click', () => toggleControlBar(true));
 
     // Toast Notification
     function showToast(msg) {
@@ -548,6 +585,9 @@
       } else if (key === 'ArrowLeft' || key === '4') {
         e.preventDefault();
         goPrev();
+      } else if (key.toLowerCase() === 'h' || key === 'Tab') {
+        e.preventDefault();
+        toggleControlBar();
       } else if (key === 'Escape') {
         exitPrompt();
       }
